@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>健身跟练助手</title>
+<style>
+:root {
+  --primary: #7c3aed;
+  --primary2: #a855f7;
+  --bg: #f4f4f8;
+  --card: #ffffff;
+  --text: #1a1a2e;
+  --sub: #888;
+  --nav-h: 64px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { width:100%; min-height:100vh; background:var(--bg); font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif; color:var(--text); }
+body { padding-bottom:calc(var(--nav-h) + var(--safe-b) + 10px); }
+
+/* ===== 顶部标题 ===== */
+.top-bar {
+  background: linear-gradient(135deg, var(--primary), var(--primary2));
+  padding: 16px 16px 14px;
+  position: sticky; top:0; z-index:200;
+}
+.top-bar h1 { color:#fff; font-size:18px; font-weight:700; }
+.top-bar p  { color:rgba(255,255,255,.75); font-size:12px; margin-top:2px; }
+
+/* ===== 底部导航 ===== */
+.bottom-nav {
+  position: fixed; bottom:0; left:0; right:0;
+  height: calc(var(--nav-h) + var(--safe-b));
+  padding-bottom: var(--safe-b);
+  background:#fff;
+  box-shadow: 0 -1px 0 #e5e5e5, 0 -4px 16px rgba(0,0,0,.06);
+  display:flex; z-index:300;
+}
+.nav-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; border:none; background:transparent; cursor:pointer;
+  color:#aaa; font-size:11px; padding:8px 0;
+  transition: color .2s;
+  min-height: 44px;
+}
+.nav-btn .ni { font-size:22px; line-height:1; }
+.nav-btn.active { color:var(--primary); }
+
+/* ===== 页面容器 ===== */
+.page { display:none; padding:12px; animation:fadeIn .25s ease; }
+.page.show { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+/* ===== 卡片 ===== */
+.card {
+  background:var(--card); border-radius:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  overflow:hidden; margin-bottom:14px;
+}
+
+/* ===== 视频 ===== */
+.video-ratio {
+  position:relative; padding-top:56.25%; background:#000;
+}
+.video-ratio iframe {
+  position:absolute; top:0; left:0; width:100%; height:100%; border:none;
+}
+.video-info { padding:12px 14px; }
+.video-title { font-size:15px; font-weight:600; line-height:1.45; margin-bottom:6px; }
+.video-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.tag {
+  display:inline-flex; align-items:center; padding:3px 9px;
+  border-radius:20px; font-size:11px; font-weight:500;
+}
+.tag-leg    { background:#ede9fe; color:#6d28d9; }
+.tag-abs    { background:#fef3c7; color:#b45309; }
+.tag-cardio { background:#dbeafe; color:#1d4ed8; }
+.tag-warm   { background:#fce7f3; color:#be185d; }
+.tag-stretch{ background:#d1fae5; color:#065f46; }
+.tag-guide  { background:#e0f2fe; color:#0369a1; }
+.meta-txt   { font-size:12px; color:var(--sub); }
+
+/* ===== 分类筛选 ===== */
+.filter-scroll {
+  display:flex; gap:8px; overflow-x:auto; padding:12px 12px 4px;
+  -webkit-overflow-scrolling:touch;
+}
+.filter-scroll::-webkit-scrollbar { display:none; }
+.filter-chip {
+  flex-shrink:0; padding:7px 16px; border-radius:20px;
+  border:1.5px solid #e0e0e0; background:#fff;
+  font-size:13px; color:#555; cursor:pointer;
+  transition: all .2s;
+  min-height:36px; display:inline-flex; align-items:center;
+}
+.filter-chip.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+/* ===== 动作指导 ===== */
+.guide-group-title {
+  font-size:15px; font-weight:700; color:var(--text);
+  padding:10px 4px 8px; border-left:4px solid var(--primary); padding-left:10px;
+  margin-bottom:10px;
+}
+.guide-card { padding:14px; }
+.guide-badge {
+  display:inline-flex; align-items:center; padding:4px 12px;
+  background:var(--primary); color:#fff; border-radius:20px;
+  font-size:12px; margin-bottom:10px;
+}
+.guide-card h4 { font-size:15px; font-weight:600; margin-bottom:10px; }
+.steps { list-style:none; padding:0; }
+.steps li {
+  display:flex; gap:10px; margin-bottom:8px;
+  font-size:13px; color:#444; line-height:1.55;
+}
+.step-num {
+  flex-shrink:0; width:20px; height:20px;
+  background:var(--primary); color:#fff; border-radius:50%;
+  font-size:11px; display:flex; align-items:center; justify-content:center;
+}
+.warn-box { background:#fff7ed; border-radius:10px; padding:12px; margin-top:6px; }
+.warn-box p { font-size:13px; color:#92400e; line-height:1.55; margin-bottom:4px; }
+.warn-box p:last-child { margin-bottom:0; }
+
+/* ===== 打卡日历 ===== */
+.cal-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 14px 10px;
+}
+.cal-title { font-size:16px; font-weight:700; }
+.cal-nav { display:flex; gap:8px; }
+.cal-nav button {
+  width:34px; height:34px; border-radius:50%;
+  border:1.5px solid #e0e0e0; background:#fff; font-size:16px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+.cal-weekdays {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  text-align:center; padding:0 8px 6px;
+}
+.cal-weekdays span { font-size:12px; color:var(--sub); padding:4px 0; }
+.cal-days {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  gap:4px; padding:0 8px 14px;
+}
+.cal-day {
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  font-size:14px; border-radius:50%; color:var(--text);
+}
+.cal-day.checked { background:var(--primary); color:#fff; font-weight:600; }
+.cal-day.today   { border:2px solid var(--primary); color:var(--primary); font-weight:600; }
+.cal-day.today.checked { color:#fff; }
+.cal-day.empty   { background:transparent; }
+
+.checkin-area { padding:0 14px 14px; }
+.checkin-big {
+  width:100%; padding:16px; border:none; border-radius:14px;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:#fff; font-size:17px; font-weight:700; cursor:pointer;
+  min-height:54px;
+}
+.checkin-big:disabled { background:#ccc; cursor:not-allowed; }
+.streak-row {
+  display:flex; gap:10px; margin-top:12px;
+}
+.streak-box {
+  flex:1; background:var(--card); border-radius:12px; padding:14px;
+  text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.streak-num { font-size:28px; font-weight:700; color:var(--primary); }
+.streak-lbl { font-size:12px; color:var(--sub); margin-top:2px; }
+
+/* ===== 我的 ===== */
+.profile-top {
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  padding:28px 16px 24px; text-align:center; color:#fff;
+}
+.avatar-circle {
+  width:72px; height:72px; border-radius:50%; background:rgba(255,255,255,.2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:34px; margin:0 auto 10px;
+}
+.profile-name { font-size:18px; font-weight:700; }
+.profile-sub  { font-size:13px; opacity:.8; margin-top:3px; }
+
+.menu-group {
+  background:var(--card); border-radius:14px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06); overflow:hidden;
+  margin-bottom:14px;
+}
+.menu-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:15px 16px; border-bottom:1px solid #f0f0f0;
+  cursor:pointer; min-height:52px;
+  transition: background .15s;
+}
+.menu-row:last-child { border-bottom:none; }
+.menu-row:active { background:#f9f9f9; }
+.menu-left { display:flex; align-items:center; gap:12px; }
+.menu-icon { font-size:22px; width:28px; text-align:center; }
+.menu-text { font-size:15px; color:var(--text); }
+.menu-arrow { color:#ccc; font-size:18px; }
+
+/* ===== 弹窗 ===== */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.45); z-index:500;
+  align-items:flex-end; justify-content:center;
+}
+.modal-overlay.show { display:flex; }
+.modal-box {
+  background:#fff; border-radius:20px 20px 0 0;
+  width:100%; max-height:85vh; overflow-y:auto;
+  padding:20px 16px calc(20px + var(--safe-b));
+  animation:slideUp .3s ease;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:none} }
+.modal-head {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:18px;
+}
+.modal-title { font-size:17px; font-weight:700; }
+.modal-close {
+  width:30px; height:30px; border-radius:50%;
+  background:#f0f0f0; border:none; font-size:20px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  color:#666;
+}
+.form-row { margin-bottom:16px; }
+.form-label { font-size:14px; color:var(--sub); margin-bottom:7px; display:block; }
+.form-input, .form-select {
+  width:100%; padding:12px 14px; border:1.5px solid #e5e5e5;
+  border-radius:10px; font-size:15px; background:#fff;
+  -webkit-appearance:none; appearance:none;
+}
+.form-input:focus, .form-select:focus { outline:none; border-color:var(--primary); }
+.btn-save {
+  width:100%; padding:15px; border:none; border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:#fff; font-size:16px; font-weight:700; cursor:pointer;
+  min-height:50px;
+}
+
+/* ===== 记录统计 ===== */
+.stats-banner {
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  border-radius:14px; padding:18px; color:#fff; margin-bottom:14px;
+}
+.stats-banner h3 { font-size:13px; opacity:.85; margin-bottom:4px; }
+.stats-banner .big { font-size:30px; font-weight:700; }
+.stats-banner .sub-txt { font-size:12px; opacity:.75; margin-top:2px; }
+.stats-mini { display:flex; gap:10px; margin-bottom:14px; }
+.mini-box {
+  flex:1; background:var(--card); border-radius:12px; padding:12px 8px;
+  text-align:center; box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.mini-num { font-size:22px; font-weight:700; color:var(--primary); }
+.mini-lbl { font-size:11px; color:var(--sub); margin-top:3px; }
+
+.rec-list { background:var(--card); border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+.rec-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:13px 15px; border-bottom:1px solid #f5f5f5;
+}
+.rec-item:last-child { border-bottom:none; }
+.rec-date { font-size:14px; color:var(--text); font-weight:500; }
+.rec-type { font-size:12px; color:var(--sub); margin-top:2px; }
+.rec-val  { font-size:14px; color:var(--primary); font-weight:600; }
+
+.add-btn {
+  width:100%; padding:14px; border:2px dashed #d8b4fe;
+  border-radius:12px; background:#faf5ff; color:var(--primary);
+  font-size:15px; cursor:pointer; margin-top:12px; min-height:48px;
+}
+
+/* ===== Toast ===== */
+.toast {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.9);
+  background:rgba(20,20,20,.85); color:#fff; padding:13px 24px;
+  border-radius:10px; font-size:15px; z-index:999;
+  opacity:0; pointer-events:none;
+  transition: opacity .25s, transform .25s;
+}
+.toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+/* ===== 空态 ===== */
+.empty { text-align:center; padding:36px 16px; color:var(--sub); }
+.empty .ei { font-size:44px; margin-bottom:10px; }
+.empty p { font-size:14px; }
+</style>
+</head>
+<body>
+
+<!-- 顶部标题 -->
+<div class="top-bar">
+  <h1>🏋️ 健身跟练助手</h1>
+  <p>热身 · 跟练 · 拉伸 · 打卡</p>
+</div>
+
+<!-- ===== 页面：热身 ===== -->
+<div class="page show" id="page-warm">
+  <p style="font-size:13px;color:var(--sub);margin-bottom:10px;padding:0 2px;">💡 运动前先做 5-8 分钟热身，激活肌肉防止受伤</p>
+  <div id="warm-list"></div>
+</div>
+
+<!-- ===== 页面：跟练 ===== -->
+<div class="page" id="page-train">
+  <div class="filter-scroll" id="filter-scroll">
+    <span class="filter-chip active" data-cat="all">全部</span>
+    <span class="filter-chip" data-cat="leg">🦵 瘦腿器械</span>
+    <span class="filter-chip" data-cat="abs">🔥 核心腹肌</span>
+    <span class="filter-chip" data-cat="cardio">💪 有氧燃脂</span>
+  </div>
+  <div style="height:8px;"></div>
+  <div id="train-list"></div>
+</div>
+
+<!-- ===== 页面：拉伸 ===== -->
+<div class="page" id="page-stretch">
+  <p style="font-size:13px;color:var(--sub);margin-bottom:10px;padding:0 2px;">💡 训练结束后做 8-10 分钟拉伸，减少肌肉酸痛</p>
+  <div id="stretch-list"></div>
+</div>
+
+<!-- ===== 页面：指导 ===== -->
+<div class="page" id="page-guide">
+  <div class="guide-group-title">✅ 正确姿势示范</div>
+  <div class="card">
+    <div class="guide-card">
+      <span class="guide-badge">🦵 腿举机</span>
+      <h4>腿举机标准动作</h4>
+      <ol class="steps">
+        <li><span class="step-num">1</span>调整座椅，使膝盖弯曲约 90°，双脚与肩同宽踩踏板</li>
+        <li><span class="step-num">2</span>双手握把手，背部紧贴靠垫，核心收紧</li>
+        <li><span class="step-num">3</span>吸气缓慢屈膝下放，膝盖对准脚尖，不内扣</li>
+        <li><span class="step-num">4</span>呼气用腿部和臀部发力推起，不完全锁死膝关节</li>
+      </ol>
+    </div>
+  </div>
+  <div class="card">
+    <div class="guide-card">
+      <span class="guide-badge">🦵 哈克深蹲机</span>
+      <h4>哈克深蹲标准动作</h4>
+      <ol class="steps">
+        <li><span class="step-num">1</span>背部与肩胛骨紧贴靠垫，脚尖略微朝外 15-30°</li>
+        <li><span class="step-num">2</span>双手握把手，臀部发力下蹲至大腿平行地面</li>
+        <li><span class="step-num">3</span>全程膝盖与脚尖同方向，不内扣</li>
+        <li><span class="step-num">4</span>靠臀部和大腿发力站起，不用腰部借力</li>
+      </ol>
+    </div>
+  </div>
+  <div class="card">
+    <div class="guide-card">
+      <span class="guide-badge">🔥 龙门架悬垂举腿</span>
+      <h4>悬垂举腿标准动作</h4>
+      <ol class="steps">
+        <li><span class="step-num">1</span>双手握横杆悬空，掌心朝前，肩膀放松</li>
+        <li><span class="step-num">2</span>保持躯干稳定，不前后晃动</li>
+        <li><span class="step-num">3</span>腹肌发力将双腿抬至与地面平行或更高</li>
+        <li><span class="step-num">4</span>最高点稍停收缩腹肌，缓慢放下吸气</li>
+      </ol>
+    </div>
+  </div>
+  <div class="card">
+    <div class="guide-card">
+      <span class="guide-badge">💪 动感单车</span>
+      <h4>动感单车正确姿势</h4>
+      <ol class="steps">
+        <li><span class="step-num">1</span>座椅高度：站立时座椅与髋关节同高</li>
+        <li><span class="step-num">2</span>脚掌中部固定在踏板上，膝盖朝正前方</li>
+        <li><span class="step-num">3</span>保持核心收紧，背部挺直，不要弓背</li>
+        <li><span class="step-num">4</span>踏频保持 60-90 RPM，均匀用力</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="guide-group-title" style="margin-top:6px;">❌ 常见错误纠正</div>
+  <div class="card">
+    <div class="guide-card">
+      <h4>❌ 深蹲膝盖内扣</h4>
+      <div class="warn-box">
+        <p>⚠️ <strong>危害：</strong>增加膝关节压力，易造成损伤</p>
+        <p>✅ <strong>纠正：</strong>脚尖朝外 15-30°，想象膝盖往外推；加强臀中肌训练（侧卧蚌式开合）</p>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="guide-card">
+      <h4>❌ 腿举腰部拱起</h4>
+      <div class="warn-box">
+        <p>⚠️ <strong>危害：</strong>腰椎受力过大，可能拉伤</p>
+        <p>✅ <strong>纠正：</strong>先减轻重量，保持腹部收紧；臀部始终紧贴靠垫</p>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="guide-card">
+      <h4>❌ 卷腹双手抱头用力</h4>
+      <div class="warn-box">
+        <p>⚠️ <strong>危害：</strong>颈椎压力过大，易拉伤颈部</p>
+        <p>✅ <strong>纠正：</strong>双手轻扶耳侧，下巴微收；用腹肌发力而不是靠惯性</p>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="guide-card">
+      <h4>❌ 动感单车步幅过大</h4>
+      <div class="warn-box">
+        <p>⚠️ <strong>危害：</strong>膝关节压力增大，容易膝盖疼</p>
+        <p>✅ <strong>纠正：</strong>适当调低阻力，提高踏频到 60-90 RPM；发力范围在 3-9 点方向</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 页面：打卡 ===== -->
+<div class="page" id="page-checkin">
+  <div class="card">
+    <div class="cal-header">
+      <span class="cal-title" id="cal-month-label"></span>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">‹</button>
+        <button onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div class="cal-weekdays">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div class="cal-days" id="cal-days"></div>
+    <div class="checkin-area">
+      <button class="checkin-big" id="checkin-btn" onclick="doCheckin()">✅ 今日打卡</button>
+    </div>
+  </div>
+  <div class="streak-row">
+    <div class="streak-box">
+      <div class="streak-num" id="streak-num">0</div>
+      <div class="streak-lbl">连续打卡(天)</div>
+    </div>
+    <div class="streak-box">
+      <div class="streak-num" id="total-checkin">0</div>
+      <div class="streak-lbl">累计打卡(天)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 页面：我的 ===== -->
+<div class="page" id="page-mine">
+  <div class="profile-top">
+    <div class="avatar-circle">💪</div>
+    <div class="profile-name">健身战士</div>
+    <div class="profile-sub">坚持就是胜利</div>
+  </div>
+  <!-- 统计 -->
+  <div class="stats-mini" style="margin-top:14px;">
+    <div class="mini-box"><div class="mini-num" id="m-days">0</div><div class="mini-lbl">打卡天</div></div>
+    <div class="mini-box"><div class="mini-num" id="m-min">0</div><div class="mini-lbl">训练分钟</div></div>
+    <div class="mini-box"><div class="mini-num" id="m-kcal">0</div><div class="mini-lbl">卡路里</div></div>
+  </div>
+  <!-- 菜单 -->
+  <div class="menu-group">
+    <div class="menu-row" onclick="openModal('modal-goal')">
+      <div class="menu-left"><span class="menu-icon">🎯</span><span class="menu-text">训练目标</span></div>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-row" onclick="openModal('modal-body')">
+      <div class="menu-left"><span class="menu-icon">📏</span><span class="menu-text">身体数据</span></div>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-row" onclick="openModal('modal-record')">
+      <div class="menu-left"><span class="menu-icon">📊</span><span class="menu-text">训练记录</span></div>
+      <span class="menu-arrow">›</span>
+    </div>
+    <div class="menu-row" onclick="openModal('modal-remind')">
+      <div class="menu-left"><span class="menu-icon">🔔</span><span class="menu-text">训练提醒</span></div>
+      <span class="menu-arrow">›</span>
+    </div>
+  </div>
+  <div class="menu-group">
+    <div class="menu-row" onclick="openModal('modal-about')">
+      <div class="menu-left"><span class="menu-icon">ℹ️</span><span class="menu-text">关于使用</span></div>
+      <span class="menu-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 底部导航 ===== -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-warm" onclick="switchPage('warm')">
+    <span class="ni">🔥</span><span>热身</span>
+  </button>
+  <button class="nav-btn" id="nav-train" onclick="switchPage('train')">
+    <span class="ni">🎬</span><span>跟练</span>
+  </button>
+  <button class="nav-btn" id="nav-stretch" onclick="switchPage('stretch')">
+    <span class="ni">🧘</span><span>拉伸</span>
+  </button>
+  <button class="nav-btn" id="nav-guide" onclick="switchPage('guide')">
+    <span class="ni">📖</span><span>指导</span>
+  </button>
+  <button class="nav-btn" id="nav-checkin" onclick="switchPage('checkin')">
+    <span class="ni">✅</span><span>打卡</span>
+  </button>
+  <button class="nav-btn" id="nav-mine" onclick="switchPage('mine')">
+    <span class="ni">👤</span><span>我的</span>
+  </button>
+</nav>
+
+<!-- ===== 弹窗：训练目标 ===== -->
+<div class="modal-overlay" id="modal-goal" onclick="bgClose(event,'modal-goal')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">🎯 训练目标</span>
+      <button class="modal-close" onclick="closeModal('modal-goal')">×</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">目标体重 (kg)</label>
+      <input type="number" class="form-input" id="g-weight" placeholder="例：55">
+    </div>
+    <div class="form-row">
+      <label class="form-label">每周训练天数</label>
+      <input type="number" class="form-input" id="g-days" placeholder="例：4" min="1" max="7">
+    </div>
+    <div class="form-row">
+      <label class="form-label">每次时长 (分钟)</label>
+      <input type="number" class="form-input" id="g-dur" placeholder="例：60">
+    </div>
+    <div class="form-row">
+      <label class="form-label">主要目标</label>
+      <select class="form-select" id="g-type">
+        <option value="slim">减脂塑形</option>
+        <option value="muscle">增肌训练</option>
+        <option value="health">健康养生</option>
+      </select>
+    </div>
+    <button class="btn-save" onclick="saveGoal()">保存</button>
+  </div>
+</div>
+
+<!-- ===== 弹窗：身体数据 ===== -->
+<div class="modal-overlay" id="modal-body" onclick="bgClose(event,'modal-body')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">📏 身体数据</span>
+      <button class="modal-close" onclick="closeModal('modal-body')">×</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">当前体重 (kg)</label>
+      <input type="number" class="form-input" id="b-weight" placeholder="例：65">
+    </div>
+    <div class="form-row">
+      <label class="form-label">腰围 (cm)</label>
+      <input type="number" class="form-input" id="b-waist" placeholder="例：76">
+    </div>
+    <div class="form-row">
+      <label class="form-label">大腿围 (cm)</label>
+      <input type="number" class="form-input" id="b-thigh" placeholder="例：52">
+    </div>
+    <button class="btn-save" onclick="saveBody()">记录</button>
+    <div id="body-history" style="margin-top:18px;"></div>
+  </div>
+</div>
+
+<!-- ===== 弹窗：训练记录 ===== -->
+<div class="modal-overlay" id="modal-record" onclick="bgClose(event,'modal-record')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">📊 训练记录</span>
+      <button class="modal-close" onclick="closeModal('modal-record')">×</button>
+    </div>
+    <div class="stats-banner">
+      <h3>累计训练天数</h3>
+      <div class="big" id="r-total-days">0</div>
+      <div class="sub-txt">坚持每一天</div>
+    </div>
+    <div class="stats-mini">
+      <div class="mini-box"><div class="mini-num" id="r-min">0</div><div class="mini-lbl">分钟</div></div>
+      <div class="mini-box"><div class="mini-num" id="r-kcal">0</div><div class="mini-lbl">卡路里</div></div>
+      <div class="mini-box"><div class="mini-num" id="r-count">0</div><div class="mini-lbl">次数</div></div>
+    </div>
+    <div class="rec-list" id="rec-list"></div>
+    <button class="add-btn" onclick="openModal('modal-add')">➕ 添加训练记录</button>
+  </div>
+</div>
+
+<!-- ===== 弹窗：添加记录 ===== -->
+<div class="modal-overlay" id="modal-add" onclick="bgClose(event,'modal-add')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">➕ 添加训练</span>
+      <button class="modal-close" onclick="closeModal('modal-add')">×</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">训练类型</label>
+      <select class="form-select" id="a-type">
+        <option>🔥 热身</option>
+        <option>🦵 瘦腿器械</option>
+        <option>🔥 核心腹肌</option>
+        <option>💪 有氧燃脂</option>
+        <option>🧘 拉伸放松</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">时长 (分钟)</label>
+      <input type="number" class="form-input" id="a-dur" placeholder="例：45">
+    </div>
+    <div class="form-row">
+      <label class="form-label">消耗卡路里</label>
+      <input type="number" class="form-input" id="a-kcal" placeholder="例：300">
+    </div>
+    <button class="btn-save" onclick="addRecord()">保存</button>
+  </div>
+</div>
+
+<!-- ===== 弹窗：训练提醒 ===== -->
+<div class="modal-overlay" id="modal-remind" onclick="bgClose(event,'modal-remind')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">🔔 训练提醒</span>
+      <button class="modal-close" onclick="closeModal('modal-remind')">×</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">开启提醒</label>
+      <select class="form-select" id="rm-on">
+        <option value="0">关闭</option>
+        <option value="1">开启</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">提醒时间</label>
+      <input type="time" class="form-input" id="rm-time" value="19:00">
+    </div>
+    <div class="form-row">
+      <label class="form-label">重复</label>
+      <select class="form-select" id="rm-rep">
+        <option value="daily">每天</option>
+        <option value="weekdays">工作日</option>
+        <option value="weekends">周末</option>
+      </select>
+    </div>
+    <button class="btn-save" onclick="saveRemind()">保存</button>
+  </div>
+</div>
+
+<!-- ===== 弹窗：关于 ===== -->
+<div class="modal-overlay" id="modal-about" onclick="bgClose(event,'modal-about')">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title">ℹ️ 关于使用</span>
+      <button class="modal-close" onclick="closeModal('modal-about')">×</button>
+    </div>
+    <div style="font-size:14px;line-height:1.85;color:#555;">
+      <p><strong>💪 推荐训练流程：</strong></p>
+      <p>🔥 热身 5 分钟 → 🎬 跟练 30-45 分钟 → 🧘 拉伸 8 分钟</p>
+      <br>
+      <p><strong>📱 添加到手机主屏幕：</strong></p>
+      <p>Safari：点右下角分享 → 添加到主屏幕</p>
+      <p>Chrome：点右上角菜单 → 添加到主屏幕</p>
+      <br>
+      <p><strong>💡 功能说明：</strong></p>
+      <p>• 所有视频直接在页面内播放（无需跳转）</p>
+      <p>• 打卡记录、训练数据均保存在本机</p>
+      <p>• 动作指导含正确姿势和错误纠正</p>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 数据
+// ============================================================
+const warmVideos = [
+  { bvid:'BV1Z34y197Yt', title:'4分钟无跳跃动态热身，激活全身', tag:'热身', tc:'warm', author:'马马 Fitness', dur:'4 分钟' },
+  { bvid:'BV1Sx411r7yZ', title:'周六野5分钟全身热身拉伸', tag:'热身', tc:'warm', author:'周六野Zoey', dur:'5 分钟' },
+  { bvid:'BV162QvBbEne', title:'MIZI运动前6分钟全身热身', tag:'热身', tc:'warm', author:'MIZI', dur:'6 分钟' },
+  { bvid:'BV1ZZxCeVE85', title:'周六野5分钟快速热身动作', tag:'热身', tc:'warm', author:'周六野Zoey', dur:'5 分钟' },
+];
+const trainVideos = [
+  { bvid:'BV1CTDdBXEy7', title:'健身房练腹三个动作就够了', tag:'核心腹肌', tc:'abs', equipment:'龙门架/绳索', author:'泽教健身', dur:'约8分钟', cat:'abs' },
+  { bvid:'BV1B8411D7Jg', title:'新手健身房练腹肌——固定器械大全', tag:'核心腹肌', tc:'abs', equipment:'卷腹机/健腹轮', author:'狗帅健身干货', dur:'2分30秒', cat:'abs' },
+  { bvid:'BV1ouT8zVEFX', title:'健身房器械动作教学，节约私教费', tag:'瘦腿器械', tc:'leg', equipment:'哈克深蹲/坐姿下拉', author:'偶不偶买噶', dur:'约18分钟', cat:'leg' },
+  { bvid:'BV1GTcrzXEJb', title:'IFBB教练腿部训练完整教学', tag:'瘦腿器械', tc:'leg', equipment:'腿举机/哈克深蹲/倒蹬机', author:'蒋介钢', dur:'专业训练', cat:'leg' },
+  { bvid:'BV1EuD9BCERt', title:'极光动感单车燃脂跟练课', tag:'有氧燃脂', tc:'cardio', equipment:'动感单车', author:'飞轮骑士元气弹', dur:'跟练课程', cat:'cardio' },
+];
+const stretchVideos = [
+  { bvid:'BV1gf4y1p78A', title:'帕梅拉10分钟全身拉伸', tag:'拉伸', tc:'stretch', author:'Pamela Reif', dur:'10 分钟' },
+  { bvid:'BV18sxizAEpg', title:'安娜5分钟运动后拉伸', tag:'拉伸', tc:'stretch', author:'安娜健身记', dur:'5 分钟' },
+  { bvid:'BV1niDiBwEHo', title:'MIZI 10分钟站立全身拉伸', tag:'拉伸', tc:'stretch', author:'MIZI', dur:'10 分钟' },
+  { bvid:'BV1AjqnBXEC7', title:'MIZI十分钟站立全身拉伸（第二期）', tag:'拉伸', tc:'stretch', author:'MIZI', dur:'10 分钟' },
+];
+
+// ============================================================
+// 渲染视频卡片
+// ============================================================
+function makeCard(v, extra) {
+  return `<div class="card">
+    <div class="video-ratio">
+      <iframe src="https://player.bilibili.com/player.html?bvid=${v.bvid}&autoplay=0" allowfullscreen loading="lazy"></iframe>
+    </div>
+    <div class="video-info">
+      <div class="video-title">${v.title}</div>
+      <div class="video-meta">
+        <span class="tag tag-${v.tc}">${v.tag}</span>
+        ${extra ? `<span class="meta-txt">🏋️ ${extra}</span>` : ''}
+        <span class="meta-txt">👤 ${v.author}</span>
+        <span class="meta-txt">⏱️ ${v.dur}</span>
+      </div>
+    </div>
+  </div>`;
+}
+function renderWarm()   { document.getElementById('warm-list').innerHTML    = warmVideos.map(v=>makeCard(v,'')).join(''); }
+function renderStretch(){ document.getElementById('stretch-list').innerHTML = stretchVideos.map(v=>makeCard(v,'')).join(''); }
+
+let currentCat = 'all';
+function renderTrain(cat) {
+  const list = cat === 'all' ? trainVideos : trainVideos.filter(v=>v.cat===cat);
+  const el = document.getElementById('train-list');
+  el.innerHTML = list.length ? list.map(v=>makeCard(v,v.equipment)).join('') : `<div class="empty"><div class="ei">🔍</div><p>暂无该分类</p></div>`;
+}
+
+// 筛选 chip
+document.getElementById('filter-scroll').addEventListener('click', function(e){
+  const chip = e.target.closest('.filter-chip');
+  if(!chip) return;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  currentCat = chip.dataset.cat;
+  renderTrain(currentCat);
+});
+
+// ============================================================
+// 页面切换
+// ============================================================
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('show');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='mine') refreshMineStats();
+}
+
+// ============================================================
+// 打卡日历
+// ============================================================
+let calYear = new Date().getFullYear(), calMonth = new Date().getMonth();
+let checkins = JSON.parse(localStorage.getItem('checkins')||'{}');
+
+function renderCalendar() {
+  const d = new Date(calYear, calMonth, 1);
+  document.getElementById('cal-month-label').textContent = calYear+'年'+(calMonth+1)+'月';
+  const firstDay = d.getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const today = new Date();
+  let html = '<div class="cal-day empty"></div>'.repeat(firstDay);
+  for(let i=1; i<=daysInMonth; i++){
+    const key = calYear+'-'+(calMonth+1)+'-'+i;
+    const isToday = today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===i;
+    const isChecked = !!checkins[key];
+    html += `<div class="cal-day${isChecked?' checked':''}${isToday?' today':''}">${i}</div>`;
+  }
+  document.getElementById('cal-days').innerHTML = html;
+  // 按钮
+  const todayKey = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+  const btn = document.getElementById('checkin-btn');
+  if(checkins[todayKey]){ btn.textContent='✅ 今日已打卡'; btn.disabled=true; }
+  else { btn.textContent='✅ 今日打卡'; btn.disabled=false; }
+  // 连续天数
+  let streak=0, tot=Object.keys(checkins).length;
+  for(let i=0;i<365;i++){
+    const dt=new Date(); dt.setDate(dt.getDate()-i);
+    const k=dt.getFullYear()+'-'+(dt.getMonth()+1)+'-'+dt.getDate();
+    if(checkins[k]) streak++; else if(i>0) break;
+  }
+  document.getElementById('streak-num').textContent = streak;
+  document.getElementById('total-checkin').textContent = tot;
+}
+function changeMonth(delta){
+  calMonth+=delta;
+  if(calMonth>11){calMonth=0;calYear++;}
+  if(calMonth<0){calMonth=11;calYear--;}
+  renderCalendar();
+}
+function doCheckin(){
+  const t=new Date(), k=t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate();
+  checkins[k]=true;
+  localStorage.setItem('checkins', JSON.stringify(checkins));
+  renderCalendar();
+  toast('🎉 打卡成功！继续加油！');
+}
+
+// ============================================================
+// 训练记录
+// ============================================================
+let records = JSON.parse(localStorage.getItem('records')||'[]');
+function addRecord(){
+  const dur=+document.getElementById('a-dur').value, kcal=+document.getElementById('a-kcal').value;
+  if(!dur||!kcal){ toast('请填写完整'); return; }
+  const t=new Date();
+  records.push({ date:t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate(), type:document.getElementById('a-type').value, dur, kcal });
+  localStorage.setItem('records', JSON.stringify(records));
+  document.getElementById('a-dur').value=''; document.getElementById('a-kcal').value='';
+  closeModal('modal-add');
+  refreshRecords();
+  toast('✅ 记录已保存');
+}
+function refreshRecords(){
+  const days=Object.keys(checkins).length, min=records.reduce((s,r)=>s+r.dur,0), kcal=records.reduce((s,r)=>s+r.kcal,0);
+  document.getElementById('r-total-days').textContent=days;
+  document.getElementById('r-min').textContent=min;
+  document.getElementById('r-kcal').textContent=kcal;
+  document.getElementById('r-count').textContent=records.length;
+  const list=document.getElementById('rec-list');
+  if(!records.length){ list.innerHTML=`<div class="empty"><div class="ei">📝</div><p>暂无记录</p></div>`; return; }
+  list.innerHTML=[...records].reverse().slice(0,15).map(r=>`<div class="rec-item"><div><div class="rec-date">${r.date}</div><div class="rec-type">${r.type}</div></div><div class="rec-val">${r.dur}分 · ${r.kcal}卡</div></div>`).join('');
+}
+function refreshMineStats(){
+  const min=records.reduce((s,r)=>s+r.dur,0), kcal=records.reduce((s,r)=>s+r.kcal,0);
+  document.getElementById('m-days').textContent=Object.keys(checkins).length;
+  document.getElementById('m-min').textContent=min;
+  document.getElementById('m-kcal').textContent=kcal;
+}
+
+// ============================================================
+// 目标设置
+// ============================================================
+function saveGoal(){
+  const g={ weight:document.getElementById('g-weight').value, days:document.getElementById('g-days').value, dur:document.getElementById('g-dur').value, type:document.getElementById('g-type').value };
+  localStorage.setItem('goal', JSON.stringify(g));
+  closeModal('modal-goal'); toast('✅ 目标已保存');
+}
+function loadGoal(){
+  const g=JSON.parse(localStorage.getItem('goal')||'{}');
+  if(g.weight) document.getElementById('g-weight').value=g.weight;
+  if(g.days)   document.getElementById('g-days').value=g.days;
+  if(g.dur)    document.getElementById('g-dur').value=g.dur;
+  if(g.type)   document.getElementById('g-type').value=g.type;
+}
+
+// ============================================================
+// 身体数据
+// ============================================================
+let bodyList = JSON.parse(localStorage.getItem('body')||'[]');
+function saveBody(){
+  const w=document.getElementById('b-weight').value, wa=document.getElementById('b-waist').value, th=document.getElementById('b-thigh').value;
+  if(!w||!wa||!th){ toast('请填写完整'); return; }
+  const t=new Date();
+  bodyList.push({ date:t.getFullYear()+'-'+(t.getMonth()+1)+'-'+t.getDate(), w,wa,th });
+  localStorage.setItem('body', JSON.stringify(bodyList));
+  document.getElementById('b-weight').value=''; document.getElementById('b-waist').value=''; document.getElementById('b-thigh').value='';
+  renderBodyHistory(); toast('✅ 数据已记录');
+}
+function renderBodyHistory(){
+  const el=document.getElementById('body-history');
+  if(!bodyList.length){ el.innerHTML='<p style="text-align:center;color:#aaa;font-size:13px;padding:10px 0">暂无数据</p>'; return; }
+  el.innerHTML='<p style="font-size:13px;color:#888;margin-bottom:8px">历史记录</p>'+[...bodyList].reverse().slice(0,5).map(d=>`<div style="background:#f8f8f8;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#444;"><strong>${d.date}</strong>　体重 ${d.w}kg　腰围 ${d.wa}cm　大腿 ${d.th}cm</div>`).join('');
+}
+
+// ============================================================
+// 提醒
+// ============================================================
+function saveRemind(){
+  const r={ on:document.getElementById('rm-on').value, time:document.getElementById('rm-time').value, rep:document.getElementById('rm-rep').value };
+  localStorage.setItem('remind', JSON.stringify(r));
+  closeModal('modal-remind'); toast('✅ 提醒已设置');
+}
+function loadRemind(){
+  const r=JSON.parse(localStorage.getItem('remind')||'{}');
+  if(r.on)   document.getElementById('rm-on').value=r.on;
+  if(r.time) document.getElementById('rm-time').value=r.time;
+  if(r.rep)  document.getElementById('rm-rep').value=r.rep;
+}
+
+// ============================================================
+// 弹窗
+// ============================================================
+function openModal(id){
+  if(id==='modal-goal') loadGoal();
+  if(id==='modal-remind') loadRemind();
+  if(id==='modal-record') refreshRecords();
+  if(id==='modal-body') renderBodyHistory();
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function bgClose(e, id){ if(e.target.id===id) closeModal(id); }
+
+// ============================================================
+// Toast
+// ============================================================
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+renderWarm();
+renderTrain('all');
+renderStretch();
+renderCalendar();
+</script>
+</body>
+</html>
